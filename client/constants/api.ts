@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-	baseURL: 'http://192.168.1.8:3000/api',
+	baseURL: 'https://ecommerceapp-omega.vercel.app/api',
 })
 
 export default api
