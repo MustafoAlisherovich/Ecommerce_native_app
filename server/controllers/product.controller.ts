@@ -1,16 +1,55 @@
 import { Request, Response } from 'express'
+import type { QueryFilter } from 'mongoose'
 import imagekit from '../config/imagekit.js'
 import Product from '../models/products.js'
+import type { IProduct } from '../types/index.js'
 
 // Get all products
 // GET /api/products
 export const getProducts = async (req: Request, res: Response) => {
 	try {
-		const { page = 1, limit = 10 } = req.query
-		const query: any = { isActive: true }
+		const { searchQuery, filter, category, page = 1, limit = 10 } = req.query
+
+		const query: QueryFilter<IProduct> = {
+			isActive: true,
+		}
+
+		if (typeof searchQuery === 'string' && searchQuery.trim()) {
+			const escapedSearchQuery = searchQuery.replace(
+				/[.*+?^${}()|[\]\\]/g,
+				'\\$&',
+			)
+
+			query.name = {
+				$regex: new RegExp(escapedSearchQuery, 'i'),
+			}
+		}
+
+		if (typeof category === 'string' && category.toLowerCase() !== 'all') {
+			query.category = category
+		}
+
+		let sortOptions: { createdAt: 1 | -1 } = {
+			createdAt: -1,
+		}
+
+		if (typeof filter === 'string') {
+			if (filter === 'newest') {
+				sortOptions = { createdAt: -1 }
+			}
+
+			if (filter === 'oldest') {
+				sortOptions = { createdAt: 1 }
+			}
+		}
+
+		console.log(req.query)
+		console.log(query)
 
 		const total = await Product.countDocuments(query)
+
 		const products = await Product.find(query)
+			.sort(sortOptions)
 			.skip((Number(page) - 1) * Number(limit))
 			.limit(Number(limit))
 
@@ -24,7 +63,10 @@ export const getProducts = async (req: Request, res: Response) => {
 			},
 		})
 	} catch (error: any) {
-		res.status(500).json({ success: false, message: error.message })
+		res.status(500).json({
+			success: false,
+			message: error.message,
+		})
 	}
 }
 

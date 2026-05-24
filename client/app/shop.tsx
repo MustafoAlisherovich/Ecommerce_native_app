@@ -1,44 +1,73 @@
 import Header from '@/components/header'
 import ProductCard from '@/components/product-card'
+import SearchBar from '@/components/search-bar'
 import { COLORS } from '@/constants'
 import api from '@/constants/api'
 import { Product } from '@/constants/types'
-import { Ionicons } from '@expo/vector-icons'
+import { useLocalSearchParams } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-import {
-	ActivityIndicator,
-	FlatList,
-	Text,
-	TextInput,
-	TouchableOpacity,
-	View,
-} from 'react-native'
-
+import { ActivityIndicator, FlatList, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function Shop() {
+	const params = useLocalSearchParams()
+
 	const [products, setProducts] = useState<Product[]>([])
 	const [loading, setLoading] = useState(true)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [page, setPage] = useState(1)
 	const [hasMore, setHasMore] = useState(true)
 
-	const fetchProducts = async (pageNumber = 1) => {
+	const [activeCategory, setActiveCategory] = useState<string | undefined>(
+		undefined,
+	)
+	const [activeSearch, setActiveSearch] = useState<string | undefined>(
+		undefined,
+	)
+	const [activeFilter, setActiveFilter] = useState<string | undefined>(
+		undefined,
+	)
+
+	const fetchProducts = async (
+		pageNumber = 1,
+		searchQuery?: string,
+		category?: string,
+		filter?: string,
+	) => {
 		if (pageNumber === 1) {
 			setLoading(true)
 		} else {
 			setLoadingMore(true)
 		}
-		try {
-			const queryParams = { page: pageNumber, limit: 10 }
 
-			const { data } = await api.get('/products', { params: queryParams })
+		try {
+			const queryParams: Record<string, string | number> = {
+				page: pageNumber,
+				limit: 10,
+			}
+
+			if (searchQuery?.trim()) {
+				queryParams.searchQuery = searchQuery
+			}
+
+			if (category && category.toLowerCase() !== 'all') {
+				queryParams.category = category
+			}
+
+			if (filter) {
+				queryParams.filter = filter
+			}
+
+			const { data } = await api.get('/products', {
+				params: queryParams,
+			})
 
 			if (pageNumber === 1) {
 				setProducts(data.data)
 			} else {
 				setProducts(prev => [...prev, ...data.data])
 			}
+
 			setHasMore(data.pagination.page < data.pagination.pages)
 			setPage(pageNumber)
 		} catch (error) {
@@ -51,40 +80,32 @@ export default function Shop() {
 
 	const loadMore = () => {
 		if (!loadingMore && !loading && hasMore) {
-			fetchProducts(page + 1)
+			fetchProducts(page + 1, activeSearch, activeCategory, activeFilter)
 		}
 	}
 
 	useEffect(() => {
-		fetchProducts(1)
-	}, [])
+		const paramCategory = Array.isArray(params.category)
+			? params.category[0]
+			: params.category
 
+		setActiveCategory(paramCategory)
+		fetchProducts(1, activeSearch, paramCategory, activeFilter)
+	}, [params.category])
 	return (
 		<SafeAreaView className='flex-1 bg-surface' edges={['top']}>
 			<Header title='Shop' showBack showCart />
 
-			<View className='flex-row gap-2 mb-3 mx-4 my-2'>
-				{/* Search Bar */}
-				<View className='flex-1 flex-row items-center bg-white rounded-xl border border-gray-100'>
-					<Ionicons
-						name='search'
-						className='ml-4'
-						size={20}
-						color={COLORS.secondary}
-					/>
-					<TextInput
-						className='flex-1 ml-2 text-primary px-4 py-3'
-						placeholder='Search products...'
-						returnKeyType='search'
-						placeholderTextColor={COLORS.secondary}
-					/>
-				</View>
-				{/* Fillter icon */}
+			{/* SEARCH BAR */}
+			<SearchBar
+				onSearch={({ searchQuery, category, filter }) => {
+					setActiveSearch(searchQuery)
+					setActiveCategory(category)
+					setActiveFilter(filter)
 
-				<TouchableOpacity className='bg-gray-800 w-12 h-12 items-center justify-center rounded-xl'>
-					<Ionicons name='options-outline' size={24} color={'white'} />
-				</TouchableOpacity>
-			</View>
+					fetchProducts(1, searchQuery, category, filter)
+				}}
+			/>
 
 			{loading ? (
 				<View className='flex-1 justify-center items-center'>

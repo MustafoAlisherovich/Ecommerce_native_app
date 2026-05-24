@@ -26,7 +26,7 @@ export default function Home() {
 	const [products, setProducts] = useState<Product[]>([])
 	const [loading, setLoading] = useState(true)
 
-	const categories = [{ id: 'all', name: 'All', icon: 'grid' }, ...CATEGORIES]
+	const categories = [...CATEGORIES]
 
 	const fetchProducts = async () => {
 		try {
@@ -125,7 +125,7 @@ export default function Home() {
 								onPress={() =>
 									router.push({
 										pathname: '/shop',
-										params: { category: cat.id === 'all' ? '' : cat.name },
+										params: { category: cat.slug },
 									})
 								}
 							/>

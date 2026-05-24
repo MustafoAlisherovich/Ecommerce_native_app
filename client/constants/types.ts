@@ -64,7 +64,7 @@ export type CartItemProps = {
 }
 
 export type CategoryItemProps = {
-	item: { id: string | number; name: string; icon: string }
+	item: { name?: string; icon: string; slug: string }
 	isSelected?: boolean
 	onPress?: () => void
 }

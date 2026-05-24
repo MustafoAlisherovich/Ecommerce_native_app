@@ -16,8 +16,8 @@ const productSchema = new Schema<IProduct>(
 		category: {
 			type: String,
 			required: true,
-			enum: ['Men', 'Women', 'Kids', 'Shoes', 'Bags', 'Other'],
-			default: 'Other',
+			enum: ['men', 'women', 'kids', 'shoes', 'bags', 'other'],
+			default: 'other',
 		},
 		stock: { type: Number, required: true, default: 0, min: 0 },
 		isFeatured: { type: Boolean, default: false },
